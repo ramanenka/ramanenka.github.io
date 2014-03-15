@@ -12,6 +12,14 @@ export PREFIX=/home/vad/work/srv
 
 Also I will use `/home/vad/work/srv/src` directory to extract archives and compile things there.
 
+First of all you need to install build-essential package:
+
+```bash
+sudo apt-get install build-essential
+```
+
+It provides everything needed to configure and compile programs. 
+
 # Apache httpd compilation #
 httpd has a couple of dependencies. Let's install them:
 
@@ -25,17 +33,29 @@ Extract it, compile and install:
 
 ```bash
 cd /home/vad/work/srv/src
-tar -xzf ~/Downloads/httpd-2.4.7.tar.gz
+tar -xzf httpd-2.4.7.tar.gz
 cd httpd-2.4.7
 ./configure --prefix=$PREFIX/httpd
 make
 make install
 ```
 
+Edit httpd configuration to change the user and the group under which this server will be running. I usually set these to my own user. Also you may want to change the default port to something greater than 80 otherwise it's mandatory to start server on behalf of root user:
+
+```apache
+User vad
+Group vad
+#...
+Listen 8053
+```
+
 Now you can start the server and then open it in a browser:
 
-```
+```bash
 $PREFIX/httpd/bin/apachectl -k start
+wget -O - localhost:8053  2>/dev/null | grep -oe  '[a-zA-Z ]*!'
+    # --> It works!
+
 ```
 
 The nice thing about `./configure` command is that it creates a file called `config.nice`. Take a look at it.
@@ -44,6 +64,7 @@ The nice thing about `./configure` command is that it creates a file called `con
 I will compile php 5.3.27 version but everything should work for latest versions. I need a couple of modules to be compiled in into php executables. So let's install all dependencies for these modules:
 
 ```bash
+sudo apt-get install libxml2-dev
 # for imap
 sudo apt-get install libc-client2007e-dev
 # for curl
@@ -58,9 +79,12 @@ If configure will fail due to the absence of `libXpm.a` library execute this com
 sudo ln -s /usr/lib/x86_64-linux-gnu/libXpm.a /usr/lib/libXpm.a
 ```
 
-Configure, compile and install:
+
+Extract, configure, compile and install:
 
 ```bash
+tar -xzf php-5.3.27.tar.gz
+cd php-5.3.27
 ./configure \
     --prefix=$PREFIX/php53 \
     --with-config-file-path=$PREFIX/php53/conf \
@@ -82,7 +106,7 @@ Configure, compile and install:
     --with-freetype-dir \
     --with-t1lib \
     --enable-gd-native-ttf \
-    --enable-gd-jis-conv \
+    --enable-gd-jis-conv
 make
 make install
 ```
