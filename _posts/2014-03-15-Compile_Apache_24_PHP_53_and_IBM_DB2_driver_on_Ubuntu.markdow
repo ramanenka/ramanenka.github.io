@@ -1,0 +1,114 @@
+---
+layout: post
+title:  "Compile Apache 2.4, PHP 5.3 and IBM DB2 driver on Ubuntu"
+date:   2014-03-15 19:35:40
+---
+# Preparation #
+I decided to install httpd and php to my own directory `/home/vad/work/srv`. You can choose whatever directory you want or skip all `--prefix` parameters to use standard directories. Export `PREFIX` env variable to simplify the process:
+
+```bash
+export PREFIX=/home/vad/work/srv
+```
+
+Also I will use `/home/vad/work/srv/src` directory to extract archives and compile things there.
+
+# Apache httpd compilation #
+httpd has a couple of dependencies. Let's install them:
+
+```bash
+sudo apt-get install libapr1-dev libaprutil1-dev
+```
+
+Download httpd here: <http://httpd.apache.org/download.cgi/>
+
+Extract it, compile and install:
+
+```bash
+cd /home/vad/work/srv/src
+tar -xzf ~/Downloads/httpd-2.4.7.tar.gz
+cd httpd-2.4.7
+./configure --prefix=$PREFIX/httpd
+make
+make install
+```
+
+Now you can start the server and then open it in a browser:
+
+```
+$PREFIX/httpd/bin/apachectl -k start
+```
+
+The nice thing about `./configure` command is that it creates a file called `config.nice`. Take a look at it.
+
+# PHP5 compilation #
+I will compile php 5.3.27 version but everything should work for latest versions. I need a couple of modules to be compiled in into php executables. So let's install all dependencies for these modules:
+
+```bash
+# for imap
+sudo apt-get install libc-client2007e-dev
+# for curl
+sudo apt-get install libcurl4-gnutls-dev
+# for gd
+sudo apt-get install libpng12-dev libjpeg62-dev libxpm-dev libfreetype6-dev libt1-dev 
+```
+
+If configure will fail due to the absence of `libXpm.a` library execute this command:
+
+```bash
+sudo ln -s /usr/lib/x86_64-linux-gnu/libXpm.a /usr/lib/libXpm.a
+```
+
+Configure, compile and install:
+
+```bash
+./configure \
+    --prefix=$PREFIX/php53 \
+    --with-config-file-path=$PREFIX/php53/conf \
+    --with-config-file-scan-dir=$PREFIX/php53/conf/conf.d/ \
+    --with-apxs2=$PREFIX/httpd/bin/apxs \
+    --enable-mbstring \
+    --enable-bcmath \
+    --enable-zip \
+    --with-curl \
+    --with-zlib \
+    --with-imap \
+    --with-kerberos \
+    --with-imap-ssl \
+    --with-gd \
+    --with-jpeg-dir \
+    --with-zlib-dir \
+    --with-png-dir \
+    --with-xpm-dir \
+    --with-freetype-dir \
+    --with-t1lib \
+    --enable-gd-native-ttf \
+    --enable-gd-jis-conv \
+make
+make install
+```
+
+Pay attention to these arguments: 
+
+*   `--with-config-file-path`
+*   `--with-config-file-scan-dir`
+*   `--with-apxs2` 
+
+You have to specify full pathes for them.
+
+Add this lines to the httpd config:
+
+```apache
+<FilesMatch "\.ph(p[2-6]?|tml)$">
+    SetHandler application/x-httpd-php
+</FilesMatch>
+
+<FilesMatch "\.phps$">
+    SetHandler application/x-httpd-php-source
+</FilesMatch>
+
+<IfModule rewrite_module>
+    RewriteEngine On
+    RewriteRule (.*\.php)s$ $1 [H=application/x-httpd-php-source]
+</IfModule>
+```
+

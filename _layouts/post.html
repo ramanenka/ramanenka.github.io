@@ -1,9 +1,12 @@
 ---
 layout: default
 ---
-<h2>{{ page.title }}</h2>
-<p class="meta">{{ page.date | date_to_string }}</p>
+<div class="post-title-outer">
+    <h2 class="post-title">{{ page.title }}</h2>
+    <div class="meta post-date clearfix">{{ page.date | date_to_string }}</div>
+    <div style="clear:both;"></div>
+</div>
 
 <div class="post">
-{{ content }}
+{{ content | markdownify }}
 </div>
