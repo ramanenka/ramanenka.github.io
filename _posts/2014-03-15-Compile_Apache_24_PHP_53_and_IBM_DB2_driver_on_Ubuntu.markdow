@@ -3,8 +3,12 @@ layout: post
 title:  "Compile Apache 2.4, PHP 5.3 and IBM DB2 driver on Ubuntu"
 date:   2014-03-15 19:35:40
 ---
-# Preparation #
-I decided to install httpd and php to my own directory `/home/vad/work/srv`. You can choose whatever directory you want or skip all `--prefix` parameters to use standard directories. Export `PREFIX` env variable to simplify the process:
+  Preparation 
+===============
+
+I decided to install httpd and php to my own directory `/home/vad/work/srv`. You can choose whatever directory you 
+want or skip all `--prefix` parameters to use standard directories. Export `PREFIX` env variable to simplify the 
+process:
 
 ```bash
 export PREFIX=/home/vad/work/srv
@@ -40,7 +44,9 @@ make
 make install
 ```
 
-Edit httpd configuration to change the user and the group under which this server will be running. I usually set these to my own user. Also you may want to change the default port to something greater than 80 otherwise it's mandatory to start server on behalf of root user:
+Edit httpd configuration to change the user and the group under which this server will be running. I usually set 
+these to my own user. Also you may want to change the default port to something greater than 80 otherwise it's 
+mandatory to start server on behalf of root user:
 
 ```apache
 User vad
@@ -60,8 +66,10 @@ wget -O - localhost:8053  2>/dev/null | grep -oe  '[a-zA-Z ]*!'
 
 The nice thing about `./configure` command is that it creates a file called `config.nice`. Take a look at it.
 
-# PHP5 compilation #
-I will compile php 5.3.27 version but everything should work for latest versions. I need a couple of modules to be compiled in into php executables. So let's install all dependencies for these modules:
+  PHP5 compilation 
+====================
+I will compile php 5.3.27 version but everything should work for latest versions. I need a couple of modules to be 
+compiled in into php executables. So let's install all dependencies for these modules:
 
 ```bash
 sudo apt-get install libxml2-dev
@@ -136,3 +144,47 @@ Add this lines to the httpd config:
 </IfModule>
 ```
 
+IBM DB2 driver compilation
+==========================
+First of all you have to have db2 libraries and db2profile file. You can get it by following steps 2-6 from here: 
+<http://www.php.net/manual/en/ibm-db2.installation.php#113330>. Alternatively you can install IBM DB2 Client, it's 
+an option in the IBM DB2 installation program.
+
+<!--DB2 requires a couple of 32-bit libs. Install them:
+
+```bash
+sudo apt-get install libc6:i386 libpam0g:i386 libstdc++6:i386
+```
+-->
+
+Extract, phpize, configure, compile and install:
+
+```bash
+sudo apt-get install autoconf #autoconf is needed
+tar -xzf ibm_db2-1.9.5.tgz
+cd ibm_db2-1.9.5/
+$PREFIX/php53/bin/phpize
+PATH=$PREFIX/php53/bin:$PATH ./configure \
+    --with-IBM_DB2=$PREFIX/dsdriver \
+    --with-php-config=$PREFIX/php53/bin/php-config
+make
+make install
+```
+
+PATH modification is needed here because it looks like `./configure` doesn't use `php-config` everywhere. 
+It won't be able to detect the system architecture type correctly and will fail with this error:
+
+```bash
+/usr/bin/ld: skipping incompatible /home/vad/work/srv/dsdriver/lib32//libdb2.so when searching for -ldb2
+/usr/bin/ld: cannot find -ldb2
+collect2: ld returned 1 exit status
+make: *** [ibm_db2.la] Error 1
+``` 
+
+Now you need to tell php to load the new extension (full path is required):
+
+```
+extension=/home/vad/work/srv/php53/lib/php/extensions/no-debug-zts-20090626/ibm_db2.so
+```
+
+Now PHP should be able to connect to DB2.
