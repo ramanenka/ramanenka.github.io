@@ -29,6 +29,9 @@ a         { color: #00a; }
 a:hover   { color: #000; }
 a:visited { color: #a0a; }
 
+.sciah {border:1px solid grey; height:20px;float:right;}
+.site .header .title {float:left;}
+
 /*****************************************************************************/
 /*
 /* Home
